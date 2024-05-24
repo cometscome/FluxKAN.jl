@@ -16,6 +16,22 @@ I rewrote the TorchKAN with the Julia language. Now this package has
 - KAL-Net: Utilizing Legendre Polynomials in Kolmogorov Arnold Legendre Networks
 only. 
 
+# install
+```
+add https://github.com/cometscome/FluxKAN.jl
+```
+
+# MNIST
+
+```julia
+using FluxKAN
+FluxKAN.MNIST_KAN()
+```
+or 
+```julia
+using FluxKAN
+FluxKAN.MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3)
+```
 
 
 ## Cite this Project
