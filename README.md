@@ -64,3 +64,10 @@ If this project is used in your research or referenced for baseline results, ple
   howpublished = {\url{https://github.com/cometscome/FluxKAN.jl}}
 }
 ```
+
+## References
+
+- [0] Ziming Liu et al., "KAN: Kolmogorov-Arnold Networks", 2024, arXiv. https://arxiv.org/abs/2404.19756
+- [1] https://github.com/KindXiaoming/pykan
+- [2] https://github.com/Blealtan/efficient-kan
+- [3] https://github.com/1ssb/torchkan
