@@ -33,6 +33,14 @@ using FluxKAN
 FluxKAN.MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3)
 ```
 
+## Author
+Yuki Nagai, Ph. D.
+
+Associate Professor in the Information Technology Center, The University of Tokyo.
+
+## Contact
+For support, please contact: nagai.yuki@mail.u-tokyo.ac.jp
+
 
 ## Cite this Project
 If this project is used in your research or referenced for baseline results, please use the following BibTeX entries.
