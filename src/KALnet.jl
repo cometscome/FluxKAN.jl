@@ -5,14 +5,29 @@ mutable struct KALnet{in_dim,out_dim,polynomial_order}
     poly_weight
     layer_norm
     base_activation
+    in_dim::Int64
+    out_dim::Int64
+    polynomial_order::Int64
 end
 
 function KALnet(in_dim, out_dim; polynomial_order=3, base_activation=SiLU)
     base_weight = Dense(in_dim, out_dim; bias=false)
     poly_weight = Dense(in_dim * (polynomial_order + 1), out_dim; bias=false)
-    layer_norm = LayerNorm(out_dim)
-    return KALnet{in_dim,out_dim,polynomial_order}(base_weight, poly_weight, layer_norm, base_activation)
+    if out_dim == 1
+        layer_norm = Dense(out_dim, out_dim; bias=false)
+    else
+        layer_norm = LayerNorm(out_dim)
+    end
+    return KALnet{in_dim,out_dim,polynomial_order}(base_weight,
+        poly_weight, layer_norm, base_activation, in_dim, out_dim, polynomial_order)
 end
+function KALnet(base_weight, poly_weight, layer_norm, base_activation, in_dim, out_dim, polynomial_order)
+    return KALnet{in_dim,out_dim,polynomial_order}(base_weight, poly_weight,
+        layer_norm, base_activation,
+        in_dim, out_dim, polynomial_order
+    )
+end
+
 export KALnet
 Flux.@layer KALnet
 
