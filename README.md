@@ -31,7 +31,7 @@ model = Chain(KALnet(2, 10), KALnet(10, 1))
 or 
 ```julia
 using FluxKAN
-model = Chain(KALnet(2, 1, polynomial_order=3), KALnet(10, 1, polynomial_order=3))
+model = Chain(KALnet(2, 10, polynomial_order=3), KALnet(10, 1, polynomial_order=3))
 ```
 
 # MNIST
