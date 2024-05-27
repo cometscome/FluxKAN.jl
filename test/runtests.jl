@@ -2,7 +2,6 @@ using FluxKAN
 using Test
 using LegendrePolynomials
 using Flux
-using Plots
 
 
 function test()
@@ -24,10 +23,15 @@ function test2()
     #println(Flux.params(kan))
     #display(kan)
     y = kan(x)
+
+    kan = KACnet(3, 2)
+    #println(Flux.params(kan))
+    #display(kan)
+    y = kan(x)
     #display(y)
 end
 
-function test3()
+function test3(method="L")
     n = 100
     x0 = range(-2, length=n, stop=2) #Julia 1.0.0以降はlinspaceではなくこの書き方になった。
     a0 = 3.0
@@ -48,7 +52,11 @@ function test3()
     φ = make_φ(x0, n, k)
     #model = Dense(k, 1) #モデルの生成。W*x + b : W[1,k],b[1]
     #model = Chain(Dense(k, 10, relu), Dense(10, 1))
-    model = Chain(KALnet(k, 10), KALnet(10, 1))
+    if method == "L"
+        model = Chain(KALnet(k, 10), KALnet(10, 1))
+    elseif method == "C"
+        model = Chain(KACnet(k, 10), KALnet(10, 1))
+    end
     display(model)
     #println("W = ", model[1].weight)
     #println("b = ", model[1].bias)
@@ -89,7 +97,7 @@ function test3()
 
 end
 
-function test4()
+function test4(method="L")
     function make_data(f)
         num = 47
         numt = 19
@@ -156,7 +164,7 @@ function test4()
     end
 
 
-    function main()
+    function main(method="L")
         num = 30
         x = range(-2, 2, length=num)
         y = range(-2, 2, length=num)
@@ -172,7 +180,11 @@ function test4()
 
         #train_loader = Flux.DataLoader((input_train,output_train), batchsize=5, shuffle=true);
         #model = Chain(Dense(2, 10, relu), Dense(10, 10, relu), Dense(10, 10, relu), Dense(10, 1))
-        model = Chain(KALnet(2, 10), KALnet(10, 1))
+        if method == "L"
+            model = Chain(KALnet(2, 10), KALnet(10, 1))
+        elseif method == "C"
+            model = Chain(KACnet(2, 10), KACnet(10, 1))
+        end
 
         rule = Adam()
         opt_state = Flux.setup(rule, model)
@@ -187,7 +199,7 @@ function test4()
         #savefig("dense.png")
 
     end
-    main()
+    main(method)
 end
 
 @testset "FluxKAN.jl" begin
@@ -198,8 +210,10 @@ end
     @testset "KAN" begin
         # Write your tests here.
         test2()
-        test3()
-        test4()
+        test3("L")
+        test3("C")
+        test4("L")
+        test4("C")
     end
 end
 

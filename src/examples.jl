@@ -4,7 +4,7 @@ using Flux: onehotbatch, onecold
 using Flux.Losses: logitcrossentropy
 using MLDatasets
 
-function MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3)
+function MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3, method="Legendre")
 
     # Loading Dataset
     x_train, y_train = MLDatasets.MNIST.traindata(Float32)
@@ -25,10 +25,20 @@ function MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3)
     #    Dense(32, nclasses)
     #)
     nn = nhidden
-    model = Chain(
-        KALnet(input_size, nn; polynomial_order),
-        KALnet(nn, nclasses; polynomial_order)
-    )
+    if method == "Legendre"
+        model = Chain(
+            KALnet(input_size, nn; polynomial_order),
+            KALnet(nn, nclasses; polynomial_order)
+        )
+    elseif method == "Chebyshev"
+        model = Chain(
+            KACnet(input_size, nn; polynomial_order),
+            KACnet(nn, nclasses; polynomial_order)
+        )
+    else
+        error("method = $medhod is not supported")
+    end
+
     display(model)
     # parameter to be learned in the model
     parameters = Flux.params(model)
