@@ -14,7 +14,9 @@ In the FluxKAN, this package uses the Flux.jl.
 
 I rewrote the TorchKAN with the Julia language. Now this package has 
 - KAL-Net: Utilizing Legendre Polynomials in Kolmogorov Arnold Legendre Networks
-only. 
+
+In addition, I implemented Chebyshev polynomials in KAN. 
+- KAC-Net: Utilizing Chebyshev Polynomials in Kolmogorov Arnold Chebyshev Networks
 
 # install
 ```
@@ -32,6 +34,12 @@ or
 ```julia
 using FluxKAN
 model = Chain(KALnet(2, 10, polynomial_order=3), KALnet(10, 1, polynomial_order=3))
+```
+
+If you want to use the Chebyshev polynomials, you can use ```KACnet```. 
+```julia
+using FluxKAN
+model = Chain(KACnet(2, 10, polynomial_order=3), KACnet(10, 1, polynomial_order=3))
 ```
 
 # MNIST
