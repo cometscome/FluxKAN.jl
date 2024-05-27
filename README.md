@@ -21,6 +21,19 @@ only.
 add https://github.com/cometscome/FluxKAN.jl
 ```
 
+# How to use 
+You can use ```KALnet``` layer like ```Dense``` layer in Flux.jl. 
+For example, the model is defined as
+```julia
+using FluxKAN
+model = Chain(KALnet(2, 10), KALnet(10, 1))
+```
+or 
+```julia
+using FluxKAN
+model = Chain(KALnet(2, 1, polynomial_order=3), KALnet(10, 1, polynomial_order=3))
+```
+
 # MNIST
 
 ```julia

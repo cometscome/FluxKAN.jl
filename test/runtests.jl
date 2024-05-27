@@ -2,6 +2,7 @@ using FluxKAN
 using Test
 using LegendrePolynomials
 using Flux
+using Plots
 
 
 function test()
