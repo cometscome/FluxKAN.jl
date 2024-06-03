@@ -1,7 +1,7 @@
 name = "FluxKAN"
 uuid = "5d54f141-216f-4d16-867d-ae7ad4aba2dd"
 authors = ["Yuki Nagai <cometscome@gmail.com>"]
-version = "1.0.0-DEV"
+version = "0.0.1"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -11,11 +11,14 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
 
 [compat]
+ChainRulesCore = "1"
+Flux = "0.14"
+LegendrePolynomials = "0.4"
+MLDatasets = "0.7"
 julia = "1.6.7"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
 
 [targets]
 test = ["Test"]
