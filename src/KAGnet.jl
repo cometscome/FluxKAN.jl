@@ -58,17 +58,37 @@ function ChainRulesCore.rrule(::typeof(rdf_foward), x, num_grids, grids, denomin
 
     function pullback(ybar)
         sbar = NoTangent()
-        dy = []
-        for n = 1:num_grids
-            dyn = (-2 .* (x .- grids[n]) ./ denominator^2) .* y[n]
-            #dyn = 2 * (-((x .- grids[n]) ./ denominator)) * exp.(-((x .- grids[n]) ./ denominator) .^ 2)
-            push!(dy, dyn)
-        end
-        dLdGdx = zero(x)
-        for n = 1:length(ybar)
-            dLdGdx .+= dy[n] .* ybar[n]
-        end
-        return sbar, dLdGdx, sbar, -dLdGdx, sbar
+
+        dLdGdx = @thunk(begin
+            dy = []
+            for n = 1:num_grids
+                dyn = (-2 .* (x .- grids[n]) ./ denominator^2) .* y[n]
+                #dyn = 2 * (-((x .- grids[n]) ./ denominator)) * exp.(-((x .- grids[n]) ./ denominator) .^ 2)
+                push!(dy, dyn)
+            end
+            dLdGdx = zero(x)
+            for n = 1:length(ybar)
+                dLdGdx .+= dy[n] .* ybar[n]
+            end
+            dLdGdx
+        end)
+        dLdGdg = sbar
+        #= note: not implemented now.
+        @thunk(begin
+            dy = []
+            for n = 1:num_grids
+                dyn = (2 .* (x .- grids[n]) ./ denominator^2) .* y[n]
+                push!(dy, dyn)
+            end
+            dLdGdg = zero(grids)
+            for n = 1:length(ybar)
+                dLdGdg[n] = sum(dy[n] .* ybar, dims=1)
+            end
+            dLdGdg
+        end)
+        =#
+
+        return sbar, dLdGdx, sbar, dLdGdg, sbar
     end
     return y, pullback
 end
