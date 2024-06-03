@@ -68,7 +68,7 @@ function ChainRulesCore.rrule(::typeof(rdf_foward), x, num_grids, grids, denomin
         for n = 1:length(ybar)
             dLdGdx .+= dy[n] .* ybar[n]
         end
-        return sbar, dLdGdx, sbar, sbar, sbar
+        return sbar, dLdGdx, sbar, -dLdGdx, sbar
     end
     return y, pullback
 end
