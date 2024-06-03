@@ -40,6 +40,11 @@ function MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3, 
             KAGnet(input_size, nn; num_grids=polynomial_order + 1),
             KAGnet(nn, nclasses; num_grids=polynomial_order + 1)
         )
+    elseif method == "GaussianLearnable"
+        model = Chain(
+            KAGLnet(input_size, nn; num_grids=polynomial_order + 1),
+            KAGLnet(nn, nclasses; num_grids=polynomial_order + 1)
+        )
     else
         error("method = $medhod is not supported")
     end

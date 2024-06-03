@@ -19,7 +19,8 @@ In addition, I implemented Chebyshev polynomials in KAN.
 - KAC-Net: Utilizing Chebyshev Polynomials in Kolmogorov Arnold Chebyshev Networks
 
 I implemented the Gaussian Radial Basis Functions introduced in [fastkan](https://github.com/ZiyaoLi/fast-kan): 
-- KAG-Net: Utilizing Gaussian radial basis functions in Kolmogorov Arnold Gaussian Networks
+- KAG-Net: Utilizing Gaussian radial basis functions in Kolmogorov Arnold Gaussian Networks (non-trainable grids)
+- KAGL-Net: (Experimental) Utilizing Gaussian radial basis functions in Kolmogorov Arnold Gaussian Networks (trainable grids)
 
 # install
 ```
@@ -51,6 +52,8 @@ using FluxKAN
 model = Chain(KAGnet(2, 10, num_grids=4), KAGnet(10, 1, num_grids=4))
 ```
 In the KAGnet, the grid points are fixed. 
+
+I implemented the Gaussian function with learnable grid points. But this is experimental. You can use ```KAGLnet```. 
 
 # MNIST
 
