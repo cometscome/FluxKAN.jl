@@ -63,6 +63,8 @@ function test3(method="L")
         model = Chain(KACnet(k, 10), KACnet(10, 1))
     elseif method == "G"
         model = Chain(KAGnet(k, 10), KAGnet(10, 1))
+    elseif method == "GL"
+        model = Chain(KAGLnet(k, 10), KAGLnet(10, 1))
     end
     display(model)
     #println("W = ", model[1].weight)
@@ -194,7 +196,10 @@ function test4(method="L")
             model = Chain(KACnet(2, 10), KACnet(10, 1))
         elseif method == "G"
             model = Chain(KAGnet(2, 10), KAGnet(10, 1))
+        elseif method == "GL"
+            model = Chain(KAGLnet(2, 10), KAGLnet(10, 1))
         end
+        display(model)
 
         rule = Adam()
         opt_state = Flux.setup(rule, model)
@@ -207,6 +212,7 @@ function test4(method="L")
             j])[1] for i in x, j in y]'
         #p = plot(x, y, [znn], st=:wireframe)
         #savefig("dense.png")
+        display(model)
 
     end
     main(method)
@@ -218,11 +224,13 @@ end
         test()
     end
     @testset "KAN" begin
-        # Write your tests here.
+        # Write your tests here.        
         test2()
+        #=
         test3("L")
         test3("C")
         test3("G")
+        test3("GL")
         println("test 4")
         println("KAL")
         test4("L")
@@ -230,6 +238,9 @@ end
         test4("C")
         println("KAG")
         test4("G")
+        =#
+        println("KAGL")
+        test4("GL")
     end
 end
 

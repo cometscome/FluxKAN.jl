@@ -7,6 +7,7 @@ using ChainRulesCore
 include("./KALnet.jl")
 include("./KACnet.jl")
 include("./KAGnet.jl")
+include("./KAGLnet.jl")
 include("./examples.jl")
 
 end
