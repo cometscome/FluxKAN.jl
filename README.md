@@ -18,6 +18,9 @@ I rewrote the TorchKAN with the Julia language. Now this package has
 In addition, I implemented Chebyshev polynomials in KAN. 
 - KAC-Net: Utilizing Chebyshev Polynomials in Kolmogorov Arnold Chebyshev Networks
 
+I implemented the Gaussian Radial Basis Functions introduced in [fastkan](https://github.com/ZiyaoLi/fast-kan): 
+- KAG-Net: Utilizing Gaussian radial basis functions in Kolmogorov Arnold Gaussian Networks
+
 # install
 ```
 add https://github.com/cometscome/FluxKAN.jl
@@ -42,6 +45,13 @@ using FluxKAN
 model = Chain(KACnet(2, 10, polynomial_order=3), KACnet(10, 1, polynomial_order=3))
 ```
 
+If you want to use the Gaussian radial basis functions, you can use ```KAGnet```. 
+```julia
+using FluxKAN
+model = Chain(KAGnet(2, 10, num_grids=4), KAGnet(10, 1, num_grids=4))
+```
+In the KAGnet, the grid points are fixed. 
+
 # MNIST
 
 ```julia
@@ -51,8 +61,9 @@ FluxKAN.MNIST_KAN()
 or 
 ```julia
 using FluxKAN
-FluxKAN.MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3)
+FluxKAN.MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3,method= "Legendre")
 ```
+We can choose ```Legendre```, ```Chebyshev```, or ```Gaussian```.
 
 ## Author
 Yuki Nagai, Ph. D.
@@ -92,3 +103,4 @@ If this project is used in your research or referenced for baseline results, ple
 - [1] https://github.com/KindXiaoming/pykan
 - [2] https://github.com/Blealtan/efficient-kan
 - [3] https://github.com/1ssb/torchkan
+- [4] https://github.com/ZiyaoLi/fast-kan

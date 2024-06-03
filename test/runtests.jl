@@ -28,6 +28,11 @@ function test2()
     #println(Flux.params(kan))
     #display(kan)
     y = kan(x)
+
+    kan = KAGnet(3, 2)
+    #println(Flux.params(kan))
+    #display(kan)
+    y = kan(x)
     #display(y)
 end
 
@@ -55,7 +60,9 @@ function test3(method="L")
     if method == "L"
         model = Chain(KALnet(k, 10), KALnet(10, 1))
     elseif method == "C"
-        model = Chain(KACnet(k, 10), KALnet(10, 1))
+        model = Chain(KACnet(k, 10), KACnet(10, 1))
+    elseif method == "G"
+        model = Chain(KAGnet(k, 10), KAGnet(10, 1))
     end
     display(model)
     #println("W = ", model[1].weight)
@@ -180,10 +187,13 @@ function test4(method="L")
 
         #train_loader = Flux.DataLoader((input_train,output_train), batchsize=5, shuffle=true);
         #model = Chain(Dense(2, 10, relu), Dense(10, 10, relu), Dense(10, 10, relu), Dense(10, 1))
+
         if method == "L"
             model = Chain(KALnet(2, 10), KALnet(10, 1))
         elseif method == "C"
             model = Chain(KACnet(2, 10), KACnet(10, 1))
+        elseif method == "G"
+            model = Chain(KAGnet(2, 10), KAGnet(10, 1))
         end
 
         rule = Adam()
@@ -212,8 +222,14 @@ end
         test2()
         test3("L")
         test3("C")
+        test3("G")
+        println("test 4")
+        println("KAL")
         test4("L")
+        println("KAC")
         test4("C")
+        println("KAG")
+        test4("G")
     end
 end
 
