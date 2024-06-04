@@ -44,7 +44,8 @@ function (m::Radial_distribution_function)(x)
 end
 
 function gauss_f(x,g,denominator)
-    return map(x -> exp(-((x - g) / denominator) ^ 2),x)
+    @. y = exp(-((x - g) / denominator) ^ 2)
+    return y
 end
 
 function rdf_foward(x, num_grids, grids, denominator)
