@@ -36,7 +36,9 @@ Flux.@layer KACnet
 
 function compute_chebyshev_polynomials(x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = zero(x)
+    fill!(P0,1)
+    #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         #return P0
         return [P0]
@@ -46,7 +48,11 @@ function compute_chebyshev_polynomials(x, order)
 
     # Compute higher order polynomials using recurrence
     for n = 1:order-1
-        Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
+        Cp1 = chebyshev_polys[end]
+        Cp0 = chebyshev_polys[end-1]
+        
+        Pn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,Cp1,Cp0)
+        #Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
         #Pn = ((2.0 * n + 1.0) .* x .* chebyshev_polys[end] - n .* chebyshev_polys[end-1]) ./ (n + 1.0)
         push!(chebyshev_polys, Pn)
     end
@@ -56,7 +62,9 @@ export compute_chebyshev_polynomials
 
 function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = zero(x)
+    fill!(P0,1)
+    #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         y = [P0]
     else
@@ -64,7 +72,12 @@ function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
         chebyshev_polys = [P0, P1]
         # Compute higher order polynomials using recurrence
         for n = 1:order-1
-            Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
+            Cp1 = chebyshev_polys[end]
+            Cp0 = chebyshev_polys[end-1]
+        
+            Pn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,Cp1,Cp0)
+
+            #Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
             #Pn = ((2.0 * n + 1.0) .* x .* chebyshev_polys[end] - n .* chebyshev_polys[end-1]) ./ (n + 1.0)
             push!(chebyshev_polys, Pn)
         end
@@ -78,10 +91,16 @@ function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
             #dchebyshev_polys = [dP0]
             dchebyshev_polys = dP0
         else
-            dP1 = ones(eltype(x), size(x)...)
+            
+            dP1 = zero(x)
+            fill!(dP1,1)
+            #ones(eltype(x), size(x)...)
             dchebyshev_polys = [dP0, dP1]
             for n = 1:order-1
-                dPn = 2 .* x .* dchebyshev_polys[end] .- dchebyshev_polys[end-1] #2x Tn - T_{n-1}
+                dCp1 = dchebyshev_polys[end]
+                dCp0 = dchebyshev_polys[end-1]
+                dPn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,dCp1,dCp0)
+                #dPn = 2 .* x .* dchebyshev_polys[end] .- dchebyshev_polys[end-1] #2x Tn - T_{n-1}
                 push!(dchebyshev_polys, dPn)
             end
         end
