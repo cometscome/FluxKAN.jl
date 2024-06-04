@@ -21,18 +21,33 @@ function test2()
     x = rand(Float32, 3, 4)
     kan = KALnet(3, 2)
     #println(Flux.params(kan))
-    #display(kan)
+    display(kan)
     y = kan(x)
 
     kan = KACnet(3, 2)
     #println(Flux.params(kan))
-    #display(kan)
+    display(kan)
     y = kan(x)
 
     kan = KAGnet(3, 2)
     #println(Flux.params(kan))
-    #display(kan)
+    display(kan)
     y = kan(x)
+
+    kan = KAGLnet(3, 2)
+    #println(Flux.params(kan))
+    display(kan)
+    y = kan(x)
+
+
+    x = rand(Float64, 3, 4)
+    kan = KAGLnet(3, 2) |> f64
+    #println(Flux.params(kan))
+    display(kan)
+    y = kan(x)
+
+
+    println("test2 end")
     #display(y)
 end
 

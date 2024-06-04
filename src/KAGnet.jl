@@ -2,11 +2,11 @@
 
 
 mutable struct Radial_distribution_function
-    grids::Vector{Float64}
-    denominator::Float64
-    num_grids::Int64
-    grid_max::Float64
-    grid_min::Float64
+    grids#::Vector{Float64}
+    denominator
+    num_grids
+    grid_max
+    grid_min
 end
 
 ```
@@ -18,9 +18,9 @@ mutable struct KAGnet{in_dim,out_dim,num_grids}
     poly_weight
     layer_norm
     base_activation
-    in_dim::Int64
-    out_dim::Int64
-    num_grids::Int64
+    in_dim
+    out_dim
+    num_grids
     rdf::Radial_distribution_function
 end
 
@@ -28,8 +28,12 @@ end
 
 function Radial_distribution_function(num_grids, grid_min, grid_max)
     grids = range(grid_min, grid_max, length=num_grids)
-    denominator = (grid_max - grid_min) / (num_grids - 1)
-    return Radial_distribution_function(grids, denominator, num_grids, grid_max, grid_min)
+    grids_W = Dense(1, num_grids; bias=false)
+    #display(reshape(collect(grids), :, 1))
+    #display(grids_W.weight)
+    grids_W.weight .= reshape(collect(grids), :, 1)
+    denominator = (grid_max - grid_min) / (num_grids - 1) |> f32
+    return Radial_distribution_function(grids_W.weight, denominator, num_grids, grid_max, grid_min)
 end
 export Radial_distribution_function
 Flux.@layer Radial_distribution_function trainable = ()
@@ -42,7 +46,8 @@ end
 function rdf_foward(x, num_grids, grids, denominator)
     y = []
     for n = 1:num_grids
-        yn = exp.(-((x .- grids[n]) ./ denominator) .^ 2)
+        yn = zero(x)
+        yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
         push!(y, yn)
     end
     return y
@@ -52,7 +57,8 @@ end
 function ChainRulesCore.rrule(::typeof(rdf_foward), x, num_grids, grids, denominator)
     y = []
     for n = 1:num_grids
-        yn = exp.(-((x .- grids[n]) ./ denominator) .^ 2)
+        yn = zero(x)
+        yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
         push!(y, yn)
     end
 

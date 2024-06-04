@@ -8,9 +8,9 @@ mutable struct KACnet{in_dim,out_dim,polynomial_order}
     poly_weight
     layer_norm
     base_activation
-    in_dim::Int64
-    out_dim::Int64
-    polynomial_order::Int64
+    in_dim
+    out_dim
+    polynomial_order
 end
 
 function KACnet(in_dim, out_dim; polynomial_order=3, base_activation=SiLU)
@@ -36,7 +36,7 @@ Flux.@layer KACnet
 
 function compute_chebyshev_polynomials(x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         #return P0
         return [P0]
@@ -56,7 +56,7 @@ export compute_chebyshev_polynomials
 
 function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         y = [P0]
     else
@@ -78,7 +78,7 @@ function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
             #dchebyshev_polys = [dP0]
             dchebyshev_polys = dP0
         else
-            dP1 = ones(size(x)...)
+            dP1 = ones(eltype(x), size(x)...)
             dchebyshev_polys = [dP0, dP1]
             for n = 1:order-1
                 dPn = 2 .* x .* dchebyshev_polys[end] .- dchebyshev_polys[end-1] #2x Tn - T_{n-1}

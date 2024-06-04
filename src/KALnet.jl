@@ -35,7 +35,7 @@ SiLU(x) = x / (1 + exp(-x))
 
 function compute_legendre_polynomials(x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         #return P0
         return [P0]
@@ -54,7 +54,7 @@ export compute_legendre_polynomials
 
 function ChainRulesCore.rrule(::typeof(compute_legendre_polynomials), x, order)
     # Base case polynomials P0 and P1
-    P0 = ones(size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
+    P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         y = [P0]
     else
@@ -75,7 +75,7 @@ function ChainRulesCore.rrule(::typeof(compute_legendre_polynomials), x, order)
             #dlegendre_polys = [dP0]
             dlegendre_polys = dP0
         else
-            dP1 = ones(size(x)...)
+            dP1 = ones(eltype(x), size(x)...)
             dlegendre_polys = [dP0, dP1]
             for n = 1:order-1
                 dPn = (n + 1) * legendre_polys[n+2] + x .* dlegendre_polys[end]
