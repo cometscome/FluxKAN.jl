@@ -44,6 +44,7 @@ function (m::Radial_distribution_function)(x)
 end
 
 function gauss_f(x,g,denominator)
+    y = zero(x)
     @. y = exp(-((x - g) / denominator) ^ 2)
     return y
 end
