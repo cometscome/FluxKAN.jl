@@ -68,6 +68,10 @@ FluxKAN.MNIST_KAN(; batch_size=256, epochs=20, nhidden=64, polynomial_order=3,me
 ```
 We can choose ```Legendre```, ```Chebyshev```, or ```Gaussian```.
 
+# GPU support
+With the use of the CUDA.jl, we can use the GPU. But now only ```KALnet``` and ```KACnet``` support GPU calculations.
+Please see [the manual of Flux.jl](https://fluxml.ai/Flux.jl/stable/gpu/).
+
 ## Author
 Yuki Nagai, Ph. D.
 
