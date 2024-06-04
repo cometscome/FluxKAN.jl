@@ -189,7 +189,7 @@ function test4(method="L")
 
         #train_loader = Flux.DataLoader((input_train,output_train), batchsize=5, shuffle=true);
         #model = Chain(Dense(2, 10, relu), Dense(10, 10, relu), Dense(10, 10, relu), Dense(10, 1))
-
+        hasbase = true
         if method == "L"
             model = Chain(KALnet(2, 10), KALnet(10, 1))
         elseif method == "C"
@@ -197,7 +197,7 @@ function test4(method="L")
         elseif method == "G"
             model = Chain(KAGnet(2, 10), KAGnet(10, 1))
         elseif method == "GL"
-            model = Chain(KAGLnet(2, 10), KAGLnet(10, 1))
+            model = Chain(KAGLnet(2, 10; hasbase), KAGLnet(10, 1; hasbase))
         end
         display(model)
 
@@ -226,7 +226,7 @@ end
     @testset "KAN" begin
         # Write your tests here.        
         test2()
-        #=
+
         test3("L")
         test3("C")
         test3("G")
@@ -238,7 +238,7 @@ end
         test4("C")
         println("KAG")
         test4("G")
-        =#
+
         println("KAGL")
         test4("GL")
     end

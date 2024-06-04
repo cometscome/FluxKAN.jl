@@ -22,6 +22,7 @@ mutable struct KAGLnet{in_dim,out_dim,num_grids}
     out_dim::Int64
     num_grids::Int64
     rdf::Radial_distribution_function_L
+    hasbase::Bool
 end
 
 
@@ -93,7 +94,7 @@ end
 
 
 
-function KAGLnet(in_dim, out_dim; num_grids=8, base_activation=SiLU, grid_max=1, grid_min=-1)
+function KAGLnet(in_dim, out_dim; num_grids=8, base_activation=SiLU, grid_max=1, grid_min=-1, hasbase=true)
     base_weight = Dense(in_dim, out_dim; bias=false)
     poly_weight = Dense(in_dim * num_grids, out_dim; bias=false)
     if out_dim == 1
@@ -103,12 +104,12 @@ function KAGLnet(in_dim, out_dim; num_grids=8, base_activation=SiLU, grid_max=1,
     end
     rdf = Radial_distribution_function_L(num_grids, grid_min, grid_max)
     return KAGLnet{in_dim,out_dim,num_grids}(base_weight,
-        poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf)
+        poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf, hasbase)
 end
-function KAGLnet(base_weight, poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf)
+function KAGLnet(base_weight, poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf, hasbase)
     return KAGLnet{in_dim,out_dim,num_grids}(base_weight, poly_weight,
         layer_norm, base_activation,
-        in_dim, out_dim, num_grids, rdf
+        in_dim, out_dim, num_grids, rdf, hasbase
     )
 end
 
@@ -116,13 +117,15 @@ export KAGLnet
 Flux.@layer KAGLnet
 
 function (m::KAGLnet{in_dim,out_dim,num_grids})(x) where {in_dim,out_dim,num_grids}
-    y = KAGLnet_forward(x, m.base_weight, m.poly_weight, m.layer_norm, m.base_activation, m.rdf)
+    y = KAGLnet_forward(x, m.base_weight, m.poly_weight, m.layer_norm, m.base_activation, m.rdf, m.hasbase)
 end
 
 
-function KAGLnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, rdf)
+function KAGLnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, rdf, hasbase)
     # Apply base activation to input and then linear transform with base weights
-    base_output = base_weight(base_activation.(x))
+    if hasbase
+        base_output = base_weight(base_activation.(x))
+    end
     # Normalize x to the range [-1, 1] for stable chebyshev polynomial computation
     xmin = minimum(x)
     xmax = maximum(x)
@@ -136,7 +139,13 @@ function KAGLnet_forward(x, base_weight, poly_weight, layer_norm, base_activatio
     # Compute polynomial output using polynomial weights
     poly_output = poly_weight(chebyshev_basis)
     # Combine base and polynomial outputs, normalize, and activate
-    y = base_activation.(layer_norm(base_output .+ poly_output))
+    if hasbase
+        y = base_output .+ poly_output
+    else
+        y = poly_output
+    end
+    y = base_activation.(layer_norm(y))
+    #y = base_activation.(layer_norm(base_output .+ poly_output))
     return y
 end
 
