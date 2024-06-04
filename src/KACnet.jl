@@ -120,7 +120,7 @@ end
 
 function KACnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, polynomial_order)
     # Apply base activation to input and then linear transform with base weights
-    base_output = base_weight(base_activation.(x))
+    base_output = base_weight(map(x -> base_activation(x),x))#base_weight(base_activation.(x))
     # Normalize x to the range [-1, 1] for stable chebyshev polynomial computation
     xmin = minimum(x)
     xmax = maximum(x)
