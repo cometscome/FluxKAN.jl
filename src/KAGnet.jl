@@ -44,9 +44,11 @@ function (m::Radial_distribution_function)(x)
 end
 
 function rdf_foward(x, num_grids, grids, denominator)
-    #y = []
-    y = map(g -> map(xi -> exp(-((xi - g)/denominator)^2),x),grids)
+    y = []
+    y = map(g -> exp.(-((x .- g) ./ denominator) .^ 2),grids)
     return y
+
+    
     for n = 1:num_grids
         yn = zero(x)
         yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
