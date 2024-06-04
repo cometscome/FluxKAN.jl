@@ -51,9 +51,8 @@ end
 
 function rdf_foward(x, num_grids, grids, denominator)
     y = []
-    y = map(g -> gauss_f(x,g,denominator),grids)
-    return y
-
+    #y = map(g -> gauss_f(x,g,denominator),grids)
+    #return y
     for n = 1:num_grids
         yn = zero(x)
         yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
