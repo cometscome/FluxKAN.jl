@@ -43,12 +43,15 @@ function (m::Radial_distribution_function)(x)
     y = rdf_foward(x, m.num_grids, m.grids, m.denominator)
 end
 
+function gauss_f(x,g,denominator)
+    return map(x -> exp(-((x - g) / denominator) ^ 2),x)
+end
+
 function rdf_foward(x, num_grids, grids, denominator)
     y = []
-    y = map(g -> exp.(-((x .- g) ./ denominator) .^ 2),grids)
+    y = map(g -> gauss_f(x,g,denominator),grids)
     return y
 
-    
     for n = 1:num_grids
         yn = zero(x)
         yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
