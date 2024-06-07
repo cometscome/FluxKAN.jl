@@ -1,7 +1,7 @@
 name = "FluxKAN"
 uuid = "5d54f141-216f-4d16-867d-ae7ad4aba2dd"
 authors = ["Yuki Nagai <cometscome@gmail.com>"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
