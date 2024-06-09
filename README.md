@@ -24,7 +24,7 @@ I implemented the Gaussian Radial Basis Functions introduced in [fastkan](https:
 
 # install
 ```
-add https://github.com/cometscome/FluxKAN.jl
+add FluxKAN
 ```
 
 # How to use 
