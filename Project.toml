@@ -1,7 +1,7 @@
 name = "FluxKAN"
 uuid = "5d54f141-216f-4d16-867d-ae7ad4aba2dd"
 authors = ["Yuki Nagai <cometscome@gmail.com>"]
-version = "0.0.3"
+version = "0.0.4"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
