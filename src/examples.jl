@@ -1,5 +1,5 @@
 using Flux
-using Flux.Data: DataLoader
+using Flux: DataLoader
 using Flux: onehotbatch, onecold
 using Flux.Losses: logitcrossentropy
 using MLDatasets
