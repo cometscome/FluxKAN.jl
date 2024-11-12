@@ -86,7 +86,7 @@ function test3(method="L")
     #println("b = ", model[1].bias)
 
     loss(x, y) = Flux.mse(model(x), y) #loss関数。mseは平均二乗誤差
-    opt = ADAM() #最適化に使う関数。ここではADAMを使用。
+    opt = Adam() #最適化に使う関数。ここではADAMを使用。
 
     function make_random_batch(x, y, batchsize)
         numofdata = length(y)
