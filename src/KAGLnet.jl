@@ -135,7 +135,12 @@ function KAGLnet_forward(x, base_weight, poly_weight, layer_norm, base_activatio
     xmin = minimum(x)
     xmax = maximum(x)
     dx = xmax - xmin
-    x_normalized = normalize_x(x, xmin, dx)
+    if length(x) == 1
+        x_normalized = x
+    else
+        x_normalized = normalize_x(x, xmin, dx)
+    end
+    #x_normalized = normalize_x(x, xmin, dx)
     # Compute chebyshev polynomials for the normalized x
     chebyshev_polys = rdf(x_normalized)
     #compute_chebyshev_polynomials(x_normalized, polynomial_order)

@@ -37,7 +37,7 @@ Flux.@layer KACnet
 function compute_chebyshev_polynomials(x, order)
     # Base case polynomials P0 and P1
     P0 = zero(x)
-    fill!(P0,1)
+    fill!(P0, 1)
     #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         #return P0
@@ -50,8 +50,8 @@ function compute_chebyshev_polynomials(x, order)
     for n = 1:order-1
         Cp1 = chebyshev_polys[end]
         Cp0 = chebyshev_polys[end-1]
-        
-        Pn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,Cp1,Cp0)
+
+        Pn = map((x, cp1, cp0) -> 2 * x * cp1 - cp0, x, Cp1, Cp0)
         #Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
         #Pn = ((2.0 * n + 1.0) .* x .* chebyshev_polys[end] - n .* chebyshev_polys[end-1]) ./ (n + 1.0)
         push!(chebyshev_polys, Pn)
@@ -63,7 +63,7 @@ export compute_chebyshev_polynomials
 function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
     # Base case polynomials P0 and P1
     P0 = zero(x)
-    fill!(P0,1)
+    fill!(P0, 1)
     #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         y = [P0]
@@ -74,8 +74,8 @@ function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
         for n = 1:order-1
             Cp1 = chebyshev_polys[end]
             Cp0 = chebyshev_polys[end-1]
-        
-            Pn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,Cp1,Cp0)
+
+            Pn = map((x, cp1, cp0) -> 2 * x * cp1 - cp0, x, Cp1, Cp0)
 
             #Pn = 2 .* x .* chebyshev_polys[end] .- chebyshev_polys[end-1] #2x Tn - T_{n-1}
             #Pn = ((2.0 * n + 1.0) .* x .* chebyshev_polys[end] - n .* chebyshev_polys[end-1]) ./ (n + 1.0)
@@ -91,15 +91,15 @@ function ChainRulesCore.rrule(::typeof(compute_chebyshev_polynomials), x, order)
             #dchebyshev_polys = [dP0]
             dchebyshev_polys = dP0
         else
-            
+
             dP1 = zero(x)
-            fill!(dP1,1)
+            fill!(dP1, 1)
             #ones(eltype(x), size(x)...)
             dchebyshev_polys = [dP0, dP1]
             for n = 1:order-1
                 dCp1 = dchebyshev_polys[end]
                 dCp0 = dchebyshev_polys[end-1]
-                dPn = map((x,cp1,cp0) -> 2*x*cp1 - cp0,x,dCp1,dCp0)
+                dPn = map((x, cp1, cp0) -> 2 * x * cp1 - cp0, x, dCp1, dCp0)
                 #dPn = 2 .* x .* dchebyshev_polys[end] .- dchebyshev_polys[end-1] #2x Tn - T_{n-1}
                 push!(dchebyshev_polys, dPn)
             end
@@ -120,14 +120,18 @@ end
 
 function KACnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, polynomial_order)
     # Apply base activation to input and then linear transform with base weights
-    xt =base_activation.(x)
+    xt = base_activation.(x)
     base_output = base_weight(xt)
     #base_output = base_weight(map(x -> base_activation(x),x))#base_weight(base_activation.(x))
     # Normalize x to the range [-1, 1] for stable chebyshev polynomial computation
     xmin = minimum(x)
     xmax = maximum(x)
     dx = xmax - xmin
-    x_normalized = normalize_x(x, xmin, dx)
+    if length(x) == 1
+        x_normalized = x
+    else
+        x_normalized = normalize_x(x, xmin, dx)
+    end
     # Compute chebyshev polynomials for the normalized x
     chebyshev_polys = compute_chebyshev_polynomials(x_normalized, polynomial_order)
     chebyshev_basis = cat(chebyshev_polys..., dims=1)

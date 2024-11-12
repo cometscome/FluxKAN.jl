@@ -36,7 +36,7 @@ SiLU(x) = x / (1 + exp(-x))
 function compute_legendre_polynomials(x, order)
     # Base case polynomials P0 and P1
     P0 = zero(x)
-    fill!(P0,1)
+    fill!(P0, 1)
     #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         #return P0
@@ -57,7 +57,7 @@ export compute_legendre_polynomials
 function ChainRulesCore.rrule(::typeof(compute_legendre_polynomials), x, order)
     # Base case polynomials P0 and P1
     P0 = zero(x)
-    fill!(P0,1)
+    fill!(P0, 1)
     #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
     if order == 0
         y = [P0]
@@ -80,9 +80,9 @@ function ChainRulesCore.rrule(::typeof(compute_legendre_polynomials), x, order)
             dlegendre_polys = dP0
         else
             dP1 = zero(x)
-            fill!(dP1,1)
+            fill!(dP1, 1)
             #dP1 = ones(eltype(x), size(x)...)
-            
+
             dlegendre_polys = [dP0, dP1]
             for n = 1:order-1
                 dPn = (n + 1) * legendre_polys[n+2] + x .* dlegendre_polys[end]
@@ -110,13 +110,18 @@ end
 function KALnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, polynomial_order)
     # Apply base activation to input and then linear transform with base weights
     #base_output = base_weight(base_activation.(x))
-    xt =base_activation.(x)
+    xt = base_activation.(x)
     base_output = base_weight(xt)
     # Normalize x to the range [-1, 1] for stable Legendre polynomial computation
     xmin = minimum(x)
     xmax = maximum(x)
     dx = xmax - xmin
-    x_normalized = normalize_x(x, xmin, dx)
+    if length(x) == 1
+        x_normalized = x
+    else
+        x_normalized = normalize_x(x, xmin, dx)
+    end
+    #x_normalized = normalize_x(x, xmin, dx)
     # Compute Legendre polynomials for the normalized x
     legendre_polys = compute_legendre_polynomials(x_normalized, polynomial_order)
     legendre_basis = cat(legendre_polys..., dims=1)

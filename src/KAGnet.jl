@@ -43,9 +43,9 @@ function (m::Radial_distribution_function)(x)
     y = rdf_foward(x, m.num_grids, m.grids, m.denominator)
 end
 
-function gauss_f(x,g,denominator)
+function gauss_f(x, g, denominator)
     y = zero(x)
-    @. y = exp(-((x - g) / denominator) ^ 2)
+    @. y = exp(-((x - g) / denominator)^2)
     return y
 end
 
@@ -145,7 +145,12 @@ function KAGnet_forward(x, base_weight, poly_weight, layer_norm, base_activation
     xmin = minimum(x)
     xmax = maximum(x)
     dx = xmax - xmin
-    x_normalized = normalize_x(x, xmin, dx)
+    if length(x) == 1
+        x_normalized = x
+    else
+        x_normalized = normalize_x(x, xmin, dx)
+    end
+    #x_normalized = normalize_x(x, xmin, dx)
     # Compute chebyshev polynomials for the normalized x
     chebyshev_polys = rdf(x_normalized)
     #compute_chebyshev_polynomials(x_normalized, polynomial_order)
