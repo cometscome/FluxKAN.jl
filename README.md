@@ -79,7 +79,7 @@ Associate Professor in the Information Technology Center, The University of Toky
 
 ## Contact
 For support, please contact: nagai.yuki@mail.u-tokyo.ac.jp
-
+Or you can write an issue in this github.
 
 ## Cite this Project
 If this project is used in your research or referenced for baseline results, please use the following BibTeX entries.
