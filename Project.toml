@@ -1,7 +1,7 @@
 name = "FluxKAN"
 uuid = "5d54f141-216f-4d16-867d-ae7ad4aba2dd"
 authors = ["Yuki Nagai <cometscome@gmail.com>"]
-version = "0.0.4"
+version = "0.1.0"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -17,7 +17,7 @@ ChainRulesCore = "1"
 Flux = "0.14, 0.16"
 LegendrePolynomials = "0.4"
 MLDatasets = "0.7"
-julia = "1.6.7"
+julia = "1.1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
