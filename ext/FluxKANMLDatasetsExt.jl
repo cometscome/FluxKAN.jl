@@ -16,8 +16,10 @@ function FluxKAN.mnist_kan(
     spline_order=3,
     method="Legendre",
 )
-    x_train, y_train = MLDatasets.MNIST.traindata(Float32)
-    x_test, y_test = MLDatasets.MNIST.testdata(Float32)
+    train_data = MLDatasets.MNIST(split=:train)[:]
+    test_data = MLDatasets.MNIST(split=:test)[:]
+    x_train, y_train = train_data.features, train_data.targets
+    x_test, y_test = test_data.features, test_data.targets
     x_train = Flux.flatten(x_train)
     x_test = Flux.flatten(x_test)
     y_train = onehotbatch(y_train, 0:9)

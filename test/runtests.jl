@@ -240,26 +240,42 @@ end
     end
 
     @testset "Flux layers" begin
-        x = rand(Float32, 3, 4)
+        rng = Random.Xoshiro(0x4b414e)
+        x = rand(rng, Float32, 3, 4)
         constant_input = fill(0.5f0, 3, 4)
-        sample = rand(Float32, 3)
-        batch = hcat(sample, rand(Float32, 3, 3))
+        sample = rand(rng, Float32, 3)
+        batch = hcat(
+            sample,
+            fill(-10.0f0, 3),
+            fill(10.0f0, 3),
+            Float32[-10, 0, 10],
+        )
 
         for layer in (
-            KANLinear(3, 2),
-            KALnet(3, 2),
-            KACnet(3, 2),
-            KAGnet(3, 2),
-            KAGLnet(3, 2),
+            KANLinear(3, 2; rng),
+            KALnet(3, 2; rng),
+            KACnet(3, 2; rng),
+            KAGnet(3, 2; rng),
+            KAGLnet(3, 2; rng),
         )
-            output = @inferred layer(x)
-            @test size(output) == (2, 4)
-            @test all(isfinite, output)
-            @test all(isfinite, layer(constant_input))
-            @test layer(sample) ≈ layer(batch)[:, 1] atol = 2.0f-6 rtol = 2.0f-6
+            @testset "$(nameof(typeof(layer)))" begin
+                output = @inferred layer(x)
+                @test size(output) == (2, 4)
+                @test all(isfinite, output)
+                @test all(isfinite, layer(constant_input))
 
-            input_gradient = Flux.gradient(z -> sum(layer(z)), x)[1]
-            @test all(isfinite, input_gradient)
+                # Dense dispatches to different BLAS kernels for a vector
+                # (GEMV) and a matrix (GEMM). Their reduction order can differ
+                # slightly across BLAS versions and runner architectures even
+                # when the layer has no batch-dependent operations.
+                sample_output = layer(sample)
+                batched_output = layer(batch)[:, 1]
+                batch_tolerance = 128 * eps(eltype(sample_output))
+                @test sample_output ≈ batched_output atol = batch_tolerance rtol = batch_tolerance
+
+                input_gradient = Flux.gradient(z -> sum(layer(z)), x)[1]
+                @test all(isfinite, input_gradient)
+            end
         end
 
         @test size(KALnet(3, 1)(x)) == (1, 4)
