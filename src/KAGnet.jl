@@ -1,165 +1,99 @@
+"""
+    Radial_distribution_function(num_grids, grid_min, grid_max)
 
-
-
-mutable struct Radial_distribution_function
-    grids#::Vector{Float64}
-    denominator
-    num_grids
-    grid_max
-    grid_min
+Fixed Gaussian radial basis grid used by `KAGnet`. Calling the object returns a
+feature-major basis matrix with `size(x, 1) * num_grids` rows.
+"""
+struct Radial_distribution_function{G,D,T}
+    grids::G
+    denominator::D
+    num_grids::Int
+    grid_max::T
+    grid_min::T
 end
-
-```
-KAGnet: 
-Gaussian version
-```
-mutable struct KAGnet{in_dim,out_dim,num_grids}
-    base_weight
-    poly_weight
-    layer_norm
-    base_activation
-    in_dim
-    out_dim
-    num_grids
-    rdf::Radial_distribution_function
-end
-
-
 
 function Radial_distribution_function(num_grids, grid_min, grid_max)
-    grids = range(grid_min, grid_max, length=num_grids)
-    grids_W = Dense(1, num_grids; bias=false)
-    #display(reshape(collect(grids), :, 1))
-    #display(grids_W.weight)
-    grids_W.weight .= reshape(collect(grids), :, 1)
-    denominator = (grid_max - grid_min) / (num_grids - 1) |> f32
-    return Radial_distribution_function(grids_W.weight, denominator, num_grids, grid_max, grid_min)
+    _validate_grid(num_grids, grid_min, grid_max)
+    T = Float32
+    grids = _grid_values(num_grids, grid_min, grid_max, T)
+    denominator = _grid_denominator(num_grids, grid_min, grid_max, T)
+    return Radial_distribution_function(
+        grids,
+        denominator,
+        Int(num_grids),
+        T(grid_max),
+        T(grid_min),
+    )
 end
-export Radial_distribution_function
+
 Flux.@layer Radial_distribution_function trainable = ()
 
+(m::Radial_distribution_function)(x) = gaussian_rbf_basis(x, m.grids, m.denominator)
 
-function (m::Radial_distribution_function)(x)
-    y = rdf_foward(x, m.num_grids, m.grids, m.denominator)
+"""Compatibility wrapper for the original misspelled internal function."""
+rdf_foward(x, num_grids, grids, denominator) = begin
+    length(grids) == num_grids || throw(DimensionMismatch(
+        "num_grids=$num_grids but $(length(grids)) grid centers were supplied",
+    ))
+    [exp.(-((x .- grid) ./ denominator) .^ 2) for grid in grids]
 end
 
-function gauss_f(x, g, denominator)
-    y = zero(x)
-    @. y = exp(-((x - g) / denominator)^2)
-    return y
+"""
+    KAGnet(in_dim, out_dim; num_grids=8, base_activation=SiLU,
+           grid_min=-2, grid_max=2, use_layernorm=true, rng=default_rng())
+
+Flux implementation of a FastKAN layer with fixed Gaussian RBF centers. In
+accordance with FastKAN, LayerNorm is applied to the input of the RBF branch,
+while the base branch operates on the unnormalized input. The two linear
+outputs are added without an extra output activation.
+"""
+struct KAGnet{BW,PW,N,A,R}
+    base_weight::BW
+    poly_weight::PW
+    input_norm::N
+    base_activation::A
+    in_dim::Int
+    out_dim::Int
+    num_grids::Int
+    rdf::R
 end
 
-function rdf_foward(x, num_grids, grids, denominator)
-    y = []
-    #y = map(g -> gauss_f(x,g,denominator),grids)
-    #return y
-    for n = 1:num_grids
-        yn = zero(x)
-        yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
-        push!(y, yn)
-    end
-    return y
-end
+function KAGnet(
+    in_dim,
+    out_dim;
+    num_grids=8,
+    base_activation=SiLU,
+    grid_max=2,
+    grid_min=-2,
+    use_layernorm=true,
+    rng=Random.default_rng(),
+)
+    _validate_layer_dimensions(in_dim, out_dim)
+    _validate_grid(num_grids, grid_min, grid_max)
 
-
-function ChainRulesCore.rrule(::typeof(rdf_foward), x, num_grids, grids, denominator)
-    y = []
-    for n = 1:num_grids
-        yn = zero(x)
-        yn .= exp.(-((x .- grids[n]) ./ denominator) .^ 2)
-        push!(y, yn)
-    end
-
-    function pullback(ybar)
-        sbar = NoTangent()
-
-        dLdGdx = @thunk(begin
-            dy = []
-            for n = 1:num_grids
-                dyn = (-2 .* (x .- grids[n]) ./ denominator^2) .* y[n]
-                #dyn = 2 * (-((x .- grids[n]) ./ denominator)) * exp.(-((x .- grids[n]) ./ denominator) .^ 2)
-                push!(dy, dyn)
-            end
-            dLdGdx = zero(x)
-            for n = 1:length(ybar)
-                dLdGdx .+= dy[n] .* ybar[n]
-            end
-            dLdGdx
-        end)
-        dLdGdg = sbar
-        #= note: not implemented now.
-        @thunk(begin
-            dy = []
-            for n = 1:num_grids
-                dyn = (2 .* (x .- grids[n]) ./ denominator^2) .* y[n]
-                push!(dy, dyn)
-            end
-            dLdGdg = zero(grids)
-            for n = 1:length(ybar)
-                dLdGdg[n] = sum(dy[n] .* ybar, dims=1)
-            end
-            dLdGdg
-        end)
-        =#
-
-        return sbar, dLdGdx, sbar, dLdGdg, sbar
-    end
-    return y, pullback
-end
-
-
-
-function KAGnet(in_dim, out_dim; num_grids=8, base_activation=SiLU, grid_max=1, grid_min=-1)
-    base_weight = Dense(in_dim, out_dim; bias=false)
-    poly_weight = Dense(in_dim * num_grids, out_dim; bias=false)
-    if out_dim == 1
-        layer_norm = Dense(out_dim, out_dim; bias=false)
-    else
-        layer_norm = LayerNorm(out_dim)
-    end
+    init = Flux.glorot_uniform(rng)
+    base_weight = Dense(in_dim => out_dim; init)
+    poly_weight = Dense(in_dim * num_grids => out_dim; bias=false, init)
+    input_norm = use_layernorm && in_dim > 1 ? LayerNorm(in_dim) : identity
     rdf = Radial_distribution_function(num_grids, grid_min, grid_max)
-    return KAGnet{in_dim,out_dim,num_grids}(base_weight,
-        poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf)
-end
-function KAGnet(base_weight, poly_weight, layer_norm, base_activation, in_dim, out_dim, num_grids, rdf)
-    return KAGnet{in_dim,out_dim,num_grids}(base_weight, poly_weight,
-        layer_norm, base_activation,
-        in_dim, out_dim, num_grids, rdf
+    return KAGnet(
+        base_weight,
+        poly_weight,
+        input_norm,
+        base_activation,
+        Int(in_dim),
+        Int(out_dim),
+        Int(num_grids),
+        rdf,
     )
 end
 
 export KAGnet
-Flux.@layer KAGnet
+Flux.@layer KAGnet trainable = (base_weight, poly_weight, input_norm)
 
-function (m::KAGnet{in_dim,out_dim,num_grids})(x) where {in_dim,out_dim,num_grids}
-    y = KAGnet_forward(x, m.base_weight, m.poly_weight, m.layer_norm, m.base_activation, m.rdf)
+function (m::KAGnet)(x)
+    _check_input_dimension(x, m.in_dim)
+    base_output = m.base_weight(m.base_activation.(x))
+    rbf_output = m.poly_weight(m.rdf(m.input_norm(x)))
+    return base_output .+ rbf_output
 end
-
-
-function KAGnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, rdf)
-    # Apply base activation to input and then linear transform with base weights
-    xt = base_activation.(x)
-    base_output = base_weight(xt)
-    #base_output = base_weight(base_activation.(x))
-    # Normalize x to the range [-1, 1] for stable chebyshev polynomial computation
-    xmin = minimum(x)
-    xmax = maximum(x)
-    dx = xmax - xmin
-    if length(x) == 1
-        x_normalized = x
-    else
-        x_normalized = normalize_x(x, xmin, dx)
-    end
-    #x_normalized = normalize_x(x, xmin, dx)
-    # Compute chebyshev polynomials for the normalized x
-    chebyshev_polys = rdf(x_normalized)
-    #compute_chebyshev_polynomials(x_normalized, polynomial_order)
-    #chebyshev_polys = compute_chebyshev_polynomials(x_normalized, polynomial_order)
-    chebyshev_basis = cat(chebyshev_polys..., dims=1)
-    # Compute polynomial output using polynomial weights
-    poly_output = poly_weight(chebyshev_basis)
-    # Combine base and polynomial outputs, normalize, and activate
-    y = base_activation.(layer_norm(base_output .+ poly_output))
-    return y
-end
-

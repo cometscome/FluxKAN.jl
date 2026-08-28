@@ -22,14 +22,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1.10'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        include:
+          - version: '1.10'
+            os: ubuntu-latest
+            arch: x64
+            coverage: false
+            experimental: false
+          - version: '1.12'
+            os: ubuntu-latest
+            arch: x64
+            coverage: true
+            experimental: false
+          - version: '1.12'
+            os: macos-latest
+            arch: x64
+            coverage: false
+            experimental: false
+          - version: '1.12'
+            os: windows-latest
+            arch: x64
+            coverage: false
+            experimental: false
+          - version: nightly
+            os: ubuntu-latest
+            arch: x64
+            coverage: false
+            experimental: true
+    continue-on-error: ${{ matrix.experimental }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -37,3 +58,47 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-processcoverage@v1
+        if: matrix.coverage
+      - uses: codecov/codecov-action@v5
+        if: matrix.coverage
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+
+  quality:
+    name: Aqua and JET
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+      - uses: julia-actions/cache@v2
+      - name: Instantiate quality environment
+        run: julia --project=qa -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+      - name: Run Aqua and targeted JET checks
+        run: julia --project=qa qa/quality.jl
+
+  lower-bounds:
+    name: Lower dependency bounds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+      - uses: julia-actions/cache@v2
+      - name: Resolve declared lower bounds and run smoke test
+        run: >-
+          julia -e 'using Pkg;
+          Pkg.activate(mktempdir());
+          Pkg.develop(path=".");
+          Pkg.add(PackageSpec(name="Flux", version=v"0.16.11"));
+          Pkg.add(PackageSpec(name="LuxCore", version=v"1.3.0"));
+          include("test/lower_bound_smoke.jl")'

@@ -1,134 +1,60 @@
+"""
+    KALnet(in_dim, out_dim; polynomial_order=3, base_activation=SiLU,
+           rng=default_rng())
 
-
-mutable struct KALnet{in_dim,out_dim,polynomial_order}
-    base_weight
-    poly_weight
-    layer_norm
-    base_activation
-    in_dim::Int64
-    out_dim::Int64
-    polynomial_order::Int64
+Flux implementation of the TorchKAN-style Kolmogorov-Arnold Legendre layer.
+The layer adds a residual base branch to a learned linear combination of
+Legendre basis functions. Inputs to the polynomial branch are transformed with
+`tanh` pointwise, avoiding batch-dependent min/max normalization.
+"""
+struct KALnet{BW,PW,LN,A}
+    base_weight::BW
+    poly_weight::PW
+    layer_norm::LN
+    base_activation::A
+    in_dim::Int
+    out_dim::Int
+    polynomial_order::Int
 end
 
-function KALnet(in_dim, out_dim; polynomial_order=3, base_activation=SiLU)
-    base_weight = Dense(in_dim, out_dim; bias=false)
-    poly_weight = Dense(in_dim * (polynomial_order + 1), out_dim; bias=false)
-    if out_dim == 1
-        layer_norm = Dense(out_dim, out_dim; bias=false)
-    else
-        layer_norm = LayerNorm(out_dim)
-    end
-    return KALnet{in_dim,out_dim,polynomial_order}(base_weight,
-        poly_weight, layer_norm, base_activation, in_dim, out_dim, polynomial_order)
-end
-function KALnet(base_weight, poly_weight, layer_norm, base_activation, in_dim, out_dim, polynomial_order)
-    return KALnet{in_dim,out_dim,polynomial_order}(base_weight, poly_weight,
-        layer_norm, base_activation,
-        in_dim, out_dim, polynomial_order
+function KALnet(
+    in_dim,
+    out_dim;
+    polynomial_order=3,
+    base_activation=SiLU,
+    rng=Random.default_rng(),
+)
+    _validate_layer_dimensions(in_dim, out_dim)
+    _validate_polynomial_order(polynomial_order)
+
+    init = Flux.glorot_uniform(rng)
+    base_weight = Dense(in_dim => out_dim; bias=false, init)
+    poly_weight = Dense(
+        in_dim * (polynomial_order + 1) => out_dim;
+        bias=false,
+        init,
+    )
+    layer_norm = out_dim == 1 ? identity : LayerNorm(out_dim)
+    return KALnet(
+        base_weight,
+        poly_weight,
+        layer_norm,
+        base_activation,
+        Int(in_dim),
+        Int(out_dim),
+        Int(polynomial_order),
     )
 end
 
 export KALnet
-Flux.@layer KALnet
+Flux.@layer KALnet trainable = (base_weight, poly_weight, layer_norm)
 
-SiLU(x) = x / (1 + exp(-x))
-
-function compute_legendre_polynomials(x, order)
-    # Base case polynomials P0 and P1
-    P0 = zero(x)
-    fill!(P0, 1)
-    #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
-    if order == 0
-        #return P0
-        return [P0]
-    end
-    P1 = deepcopy(x)
-    legendre_polys = [P0, P1]
-
-    # Compute higher order polynomials using recurrence
-    for n = 1:order-1
-        Pn = ((2.0 * n + 1.0) .* x .* legendre_polys[end] - n .* legendre_polys[end-1]) ./ (n + 1.0)
-        push!(legendre_polys, Pn)
-    end
-    return legendre_polys
+function (m::KALnet)(x)
+    _check_input_dimension(x, m.in_dim)
+    base_output = m.base_weight(m.base_activation.(x))
+    legendre_basis = _polynomial_basis(
+        compute_legendre_polynomials(_polynomial_input(x), m.polynomial_order),
+    )
+    poly_output = m.poly_weight(legendre_basis)
+    return m.base_activation.(m.layer_norm(base_output .+ poly_output))
 end
-export compute_legendre_polynomials
-
-function ChainRulesCore.rrule(::typeof(compute_legendre_polynomials), x, order)
-    # Base case polynomials P0 and P1
-    P0 = zero(x)
-    fill!(P0, 1)
-    #P0 = ones(eltype(x), size(x)...)#x.new_ones(x.shape)  # P0 = 1 for all x
-    if order == 0
-        y = [P0]
-    else
-        P1 = deepcopy(x)
-        legendre_polys = [P0, P1]
-        # Compute higher order polynomials using recurrence
-        for n = 1:order-1
-            Pn = ((2.0 * n + 1.0) .* x .* legendre_polys[end] - n .* legendre_polys[end-1]) ./ (n + 1.0)
-            push!(legendre_polys, Pn)
-        end
-        y = legendre_polys
-    end
-
-    function pullback(ybar)
-        sbar = NoTangent()
-        dP0 = zero(x)
-        if order == 0
-            #dlegendre_polys = [dP0]
-            dlegendre_polys = dP0
-        else
-            dP1 = zero(x)
-            fill!(dP1, 1)
-            #dP1 = ones(eltype(x), size(x)...)
-
-            dlegendre_polys = [dP0, dP1]
-            for n = 1:order-1
-                dPn = (n + 1) * legendre_polys[n+2] + x .* dlegendre_polys[end]
-                # ((2.0 * n + 1.0) .* x .* legendre_polys[end] - n .* legendre_polys[end-1]) ./ (n + 1.0)
-                push!(dlegendre_polys, dPn)
-            end
-        end
-        dLdPdPdx = zero(x)
-        for n = 1:length(ybar)
-            dLdPdPdx .+= dlegendre_polys[n] .* ybar[n]
-        end
-        return sbar, dLdPdPdx, sbar
-    end
-    return y, pullback
-end
-
-function (m::KALnet{in_dim,out_dim,polynomial_order})(x) where {in_dim,out_dim,polynomial_order}
-    y = KALnet_forward(x, m.base_weight, m.poly_weight, m.layer_norm, m.base_activation, polynomial_order)
-end
-
-function normalize_x(x, xmin, dx)
-    return 2 * (x .- xmin) / dx .- 1
-end
-
-function KALnet_forward(x, base_weight, poly_weight, layer_norm, base_activation, polynomial_order)
-    # Apply base activation to input and then linear transform with base weights
-    #base_output = base_weight(base_activation.(x))
-    xt = base_activation.(x)
-    base_output = base_weight(xt)
-    # Normalize x to the range [-1, 1] for stable Legendre polynomial computation
-    xmin = minimum(x)
-    xmax = maximum(x)
-    dx = xmax - xmin
-    if length(x) == 1
-        x_normalized = x
-    else
-        x_normalized = normalize_x(x, xmin, dx)
-    end
-    #x_normalized = normalize_x(x, xmin, dx)
-    # Compute Legendre polynomials for the normalized x
-    legendre_polys = compute_legendre_polynomials(x_normalized, polynomial_order)
-    legendre_basis = cat(legendre_polys..., dims=1)
-    # Compute polynomial output using polynomial weights
-    poly_output = poly_weight(legendre_basis)
-    # Combine base and polynomial outputs, normalize, and activate
-    y = base_activation.(layer_norm(base_output .+ poly_output))
-    return y
-end
-
