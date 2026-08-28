@@ -238,11 +238,10 @@ function bspline_basis(x, grid, spline_order)
     ))
 
     tail = size(x)[2:end]
-    singleton_tail = ntuple(_ -> 1, length(tail))
-    x_view = reshape(x, 1, in_dim, tail...)
-    knot_matrix =
-        grid isa AbstractVector ? reshape(grid, :, 1) : PermutedDimsArray(grid, (2, 1))
-    knots = reshape(knot_matrix, n_knots, grid_features, singleton_tail...)
+    x_matrix = reshape(x, in_dim, :)
+    x_view = reshape(x_matrix, 1, in_dim, size(x_matrix, 2))
+    knot_matrix = grid isa AbstractVector ? reshape(grid, :, 1) : transpose(grid)
+    knots = reshape(knot_matrix, n_knots, grid_features, 1)
 
     lower = selectdim(knots, 1, 1:(n_knots - 1))
     upper = selectdim(knots, 1, 2:n_knots)

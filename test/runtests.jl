@@ -26,6 +26,25 @@ tree_isfinite(x::AbstractArray) = all(isfinite, x)
 tree_isfinite(x::NamedTuple) = all(tree_isfinite, values(x))
 tree_isfinite(::Nothing) = true
 
+function test_flux_layer(layer, x, constant_input, sample, batch)
+    output = @inferred layer(x)
+    @test size(output) == (2, 4)
+    @test all(isfinite, output)
+    @test all(isfinite, layer(constant_input))
+
+    # Dense dispatches to different BLAS kernels for a vector (GEMV) and a
+    # matrix (GEMM). Their reduction order can differ slightly across BLAS
+    # versions and runner architectures even without batch-dependent work.
+    sample_output = layer(sample)
+    batched_output = layer(batch)[:, 1]
+    batch_tolerance = 128 * eps(eltype(sample_output))
+    @test sample_output ≈ batched_output atol = batch_tolerance rtol = batch_tolerance
+
+    input_gradient = Flux.gradient(z -> sum(layer(z)), x)[1]
+    @test all(isfinite, input_gradient)
+    return nothing
+end
+
 function lux_parameters(m::KANLinear)
     parameters = (
         base_weight=copy(m.base_weight),
@@ -144,6 +163,29 @@ end
             @test vec(sum(basis; dims=1)) ≈ ones(size(x, 2)) atol = 1.0e-12
         end
 
+        tensor_input = reshape(
+            collect(range(-0.9, 0.9; length=24)),
+            2,
+            3,
+            4,
+        )
+        tensor_order = 2
+        tensor_grid_size = 5
+        tensor_step = 2 / tensor_grid_size
+        tensor_grid = collect(range(
+            -1 - tensor_order * tensor_step,
+            1 + tensor_order * tensor_step;
+            length=tensor_grid_size + 2 * tensor_order + 1,
+        ))
+        tensor_basis = bspline_basis(tensor_input, tensor_grid, tensor_order)
+        matrix_basis = bspline_basis(
+            reshape(tensor_input, 2, :),
+            tensor_grid,
+            tensor_order,
+        )
+        @test size(tensor_basis) == (2 * (tensor_grid_size + tensor_order), 3, 4)
+        @test reshape(tensor_basis, size(tensor_basis, 1), :) == matrix_basis
+
         spline_order = 3
         grid_size = 8
         step = 2 / grid_size
@@ -259,22 +301,7 @@ end
             KAGLnet(3, 2; rng),
         )
             @testset "$(nameof(typeof(layer)))" begin
-                output = @inferred layer(x)
-                @test size(output) == (2, 4)
-                @test all(isfinite, output)
-                @test all(isfinite, layer(constant_input))
-
-                # Dense dispatches to different BLAS kernels for a vector
-                # (GEMV) and a matrix (GEMM). Their reduction order can differ
-                # slightly across BLAS versions and runner architectures even
-                # when the layer has no batch-dependent operations.
-                sample_output = layer(sample)
-                batched_output = layer(batch)[:, 1]
-                batch_tolerance = 128 * eps(eltype(sample_output))
-                @test sample_output ≈ batched_output atol = batch_tolerance rtol = batch_tolerance
-
-                input_gradient = Flux.gradient(z -> sum(layer(z)), x)[1]
-                @test all(isfinite, input_gradient)
+                test_flux_layer(layer, x, constant_input, sample, batch)
             end
         end
 
